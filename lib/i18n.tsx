@@ -3,8 +3,9 @@
 import * as React from "react";
 
 import { formatCurrency, isSupportedCurrency } from "@/lib/i18n/currency";
+import { turkishMessages } from "@/lib/i18n/tr";
 
-export type Locale = "en" | "pt-BR";
+export type Locale = "tr-TR" | "en" | "pt-BR";
 export type Currency = import("@/lib/i18n/currency").CurrencyCode;
 
 type Messages = typeof messages.en;
@@ -1347,7 +1348,10 @@ const LocaleContext = React.createContext<{
 } | null>(null);
 
 function resolveLocale(value?: string | null): Locale {
-  return value?.toLowerCase().startsWith("pt") ? "pt-BR" : "en";
+  const normalized = value?.toLowerCase() ?? "";
+  if (normalized.startsWith("tr")) return "tr-TR";
+  if (normalized.startsWith("pt")) return "pt-BR";
+  return "en";
 }
 
 function resolveCurrency(
@@ -1355,6 +1359,7 @@ function resolveCurrency(
   locale: Locale,
 ): Currency {
   if (isSupportedCurrency(candidate)) return candidate;
+  if (locale === "tr-TR") return "TRY";
   return locale === "pt-BR" ? "BRL" : "USD";
 }
 
@@ -1369,6 +1374,20 @@ function readStoredLocalePreferences(): { currency: Currency; locale: Locale } {
 }
 
 function translateMessage(locale: Locale, key: string): string {
+  if (locale === "tr-TR") {
+    return (
+      turkishMessages[key] ??
+      turkishMessages[`data.category.${key}`] ??
+      turkishMessages[`data.group.${key}`] ??
+      turkishMessages[`common.${key}`] ??
+      messages.en[key as keyof Messages] ??
+      messages.en[`data.category.${key}` as keyof Messages] ??
+      messages.en[`data.group.${key}` as keyof Messages] ??
+      messages.en[`common.${key}` as keyof Messages] ??
+      key
+    );
+  }
+
   return (
     messages[locale][key as keyof Messages] ??
     messages[locale][`data.category.${key}` as keyof Messages] ??

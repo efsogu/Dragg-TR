@@ -1201,7 +1201,7 @@ async function listPaymentMethods(options?: {
 }
 
 function isProtectedPaymentMethod(paymentMethod: PaymentMethodRow) {
-  return paymentMethod.type === "cash" || paymentMethod.type === "pix";
+  return paymentMethod.type === "cash";
 }
 
 async function getCategoryForMutation(categoryId: string) {
