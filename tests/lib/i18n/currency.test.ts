@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import {
   formatCurrency,
+  getCurrencySymbol,
   getStoredCurrency,
   isSupportedCurrency,
   setStoredCurrency,
@@ -25,6 +26,15 @@ describe("isSupportedCurrency", () => {
     expect(isSupportedCurrency(undefined)).toBe(false);
     expect(isSupportedCurrency(null)).toBe(false);
     expect(isSupportedCurrency("")).toBe(false);
+  });
+});
+
+describe("getCurrencySymbol", () => {
+  it("returns the expected symbol for every supported currency", () => {
+    expect(getCurrencySymbol("TRY")).toBe("₺");
+    expect(getCurrencySymbol("BRL")).toBe("R$");
+    expect(getCurrencySymbol("USD")).toBe("$");
+    expect(getCurrencySymbol("EUR")).toBe("€");
   });
 });
 
