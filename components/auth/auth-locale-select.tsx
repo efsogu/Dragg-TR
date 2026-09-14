@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useI18n } from "@/lib/i18n";
+import { type Locale, useI18n } from "@/lib/i18n";
+
+function resolveLocaleSelection(value: string): Locale {
+  if (value === "tr-TR") return "tr-TR";
+  if (value === "pt-BR") return "pt-BR";
+  return "en";
+}
 
 export function AuthLocaleSelect() {
   const { locale, setLocale, t } = useI18n();
@@ -16,15 +22,7 @@ export function AuthLocaleSelect() {
   return (
     <Select
       value={locale}
-      onValueChange={(value) =>
-        setLocale(
-          value === "tr-TR"
-            ? "tr-TR"
-            : value === "pt-BR"
-              ? "pt-BR"
-              : "en",
-        )
-      }
+      onValueChange={(value) => setLocale(resolveLocaleSelection(value))}
     >
       <SelectTrigger
         aria-label={t("screen.settings.language")}
