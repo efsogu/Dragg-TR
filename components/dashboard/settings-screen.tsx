@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { type OAuthProfile } from "@/lib/auth/profile";
-import { useI18n } from "@/lib/i18n";
+import { type Locale, useI18n } from "@/lib/i18n";
 import { isSupportedCurrency } from "@/lib/i18n/currency";
 
 function SettingsCard({
@@ -65,6 +65,12 @@ function getInitials(name: string) {
 }
 
 type I18n = ReturnType<typeof useI18n>;
+
+function resolveLocaleSelection(value: string): Locale {
+  if (value === "tr-TR") return "tr-TR";
+  if (value === "pt-BR") return "pt-BR";
+  return "en";
+}
 
 function ProfileAvatarRow({
   profile,
@@ -251,15 +257,7 @@ function LanguageSelectField({
       <Label>{t("screen.settings.language")}</Label>
       <Select
         value={locale}
-        onValueChange={(value) =>
-          setLocale(
-            value === "tr-TR"
-              ? "tr-TR"
-              : value === "pt-BR"
-                ? "pt-BR"
-                : "en",
-          )
-        }
+        onValueChange={(value) => setLocale(resolveLocaleSelection(value))}
       >
         <SelectTrigger>
           <SelectValue />
