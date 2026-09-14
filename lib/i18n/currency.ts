@@ -1,12 +1,22 @@
 export type CurrencyCode = "TRY" | "BRL" | "USD" | "EUR";
 
 const supportedCurrencies = new Set<CurrencyCode>(["TRY", "BRL", "USD", "EUR"]);
+const currencySymbols: Record<CurrencyCode, string> = {
+  TRY: "₺",
+  BRL: "R$",
+  USD: "$",
+  EUR: "€",
+};
 const storageKey = "dragg-currency";
 
 const defaultCurrency: CurrencyCode = "USD";
 
 export function isSupportedCurrency(value: unknown): value is CurrencyCode {
   return supportedCurrencies.has(value as CurrencyCode);
+}
+
+export function getCurrencySymbol(currency: CurrencyCode): string {
+  return currencySymbols[currency];
 }
 
 export function getStoredCurrency(): CurrencyCode {
