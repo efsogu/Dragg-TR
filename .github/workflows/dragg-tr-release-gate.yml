@@ -40,6 +40,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Verify security dependency pins
+        run: node scripts/verify-security-versions.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
