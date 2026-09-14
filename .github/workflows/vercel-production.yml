@@ -3,7 +3,7 @@ name: Vercel Production Deploy
 on:
   workflow_run:
     workflows:
-      - Dragg CI
+      - Dragg-TR Release Gate
     types:
       - completed
     branches:
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy after checks pass
+    name: Deploy after release gate passes
     runs-on: ubuntu-latest
     if: >
       github.event.workflow_run.conclusion == 'success' &&
