@@ -1,6 +1,6 @@
-export type CurrencyCode = "BRL" | "USD" | "EUR";
+export type CurrencyCode = "TRY" | "BRL" | "USD" | "EUR";
 
-const supportedCurrencies = new Set<CurrencyCode>(["BRL", "USD", "EUR"]);
+const supportedCurrencies = new Set<CurrencyCode>(["TRY", "BRL", "USD", "EUR"]);
 const storageKey = "dragg-currency";
 
 const defaultCurrency: CurrencyCode = "USD";
