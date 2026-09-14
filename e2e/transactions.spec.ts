@@ -10,9 +10,7 @@ test("creates, edits, and deletes a transaction", async ({ page }) => {
   await page.getByRole("button", { name: "Add Transaction" }).click();
   const addDialog = page.getByRole("dialog");
   await addDialog.locator("#amount").pressSequentially("5000");
-  await addDialog
-    .getByRole("button", { name: "Market & Gıda", exact: true })
-    .click();
+  await addDialog.getByRole("button", { name: /Market & Gıda$/ }).click();
   await addDialog.locator("#description").fill(description);
   await addDialog.getByRole("button", { name: "Nakit", exact: true }).click();
   await addDialog.getByRole("button", { name: "Save transaction" }).click();
