@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - package.json
+      - pnpm-workspace.yaml
 
 permissions:
   contents: write
