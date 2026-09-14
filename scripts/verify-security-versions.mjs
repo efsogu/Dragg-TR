@@ -29,12 +29,12 @@ if (pkg.overrides?.sharp !== expected.sharp) {
   fail(`package.json sharp override=${pkg.overrides?.sharp ?? "missing"}`);
 }
 
-if (!/^  sharp: 0\.35\.4$/m.test(workspace)) {
+if (!/^ {2}sharp: 0\.35\.4$/m.test(workspace)) {
   fail("pnpm-workspace.yaml sharp override is not exactly 0.35.4");
 }
 
 const lockHeader = lockfile.slice(0, 1500);
-if (!/^  sharp: 0\.35\.4$/m.test(lockHeader)) {
+if (!/^ {2}sharp: 0\.35\.4$/m.test(lockHeader)) {
   fail("pnpm-lock.yaml sharp override header is not exactly 0.35.4");
 }
 
