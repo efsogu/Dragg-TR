@@ -12,7 +12,8 @@ afterEach(() => {
 });
 
 describe("isSupportedCurrency", () => {
-  it("returns true for BRL, USD, EUR", () => {
+  it("returns true for TRY, BRL, USD, EUR", () => {
+    expect(isSupportedCurrency("TRY")).toBe(true);
     expect(isSupportedCurrency("BRL")).toBe(true);
     expect(isSupportedCurrency("USD")).toBe(true);
     expect(isSupportedCurrency("EUR")).toBe(true);
@@ -113,6 +114,11 @@ describe("getStoredCurrency / setStoredCurrency (browser)", () => {
 });
 
 describe("formatCurrency", () => {
+  it("formats TRY with Turkish locale", () => {
+    const result = formatCurrency(1234.5, "tr-TR", "TRY");
+    expect(result).toContain("₺");
+  });
+
   it("formats BRL with Brazilian locale", () => {
     const result = formatCurrency(2883.03, "pt-BR", "BRL");
     expect(result).toContain("R$");
