@@ -16,7 +16,15 @@ export function AuthLocaleSelect() {
   return (
     <Select
       value={locale}
-      onValueChange={(value) => setLocale(value === "pt-BR" ? "pt-BR" : "en")}
+      onValueChange={(value) =>
+        setLocale(
+          value === "tr-TR"
+            ? "tr-TR"
+            : value === "pt-BR"
+              ? "pt-BR"
+              : "en",
+        )
+      }
     >
       <SelectTrigger
         aria-label={t("screen.settings.language")}
@@ -25,6 +33,7 @@ export function AuthLocaleSelect() {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="tr-TR">Türkçe</SelectItem>
         <SelectItem value="en">{t("auth.localeEnglish")}</SelectItem>
         <SelectItem value="pt-BR">{t("auth.localePortuguese")}</SelectItem>
       </SelectContent>
