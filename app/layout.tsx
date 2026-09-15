@@ -34,14 +34,16 @@ const satoshi = localFont({
   display: "swap",
 });
 
+const SITE_URL = "https://dragg-tr.vercel.app";
+const REPOSITORY_URL = "https://github.com/efsogu/Dragg-TR";
 const DESCRIPTION =
   "Free and open-source personal finance app. Track income, expenses, budgets, goals, and reports. Self-hostable. Built with Next.js + Supabase.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://dragg-finance.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Dragg – Personal Finance Dashboard | Open Source",
-    template: "%s | Dragg",
+    default: "Dragg-TR – Personal Finance Dashboard | Open Source",
+    template: "%s | Dragg-TR",
   },
   description: DESCRIPTION,
   keywords: [
@@ -55,18 +57,18 @@ export const metadata: Metadata = {
     "nextjs finance app",
   ],
   alternates: {
-    canonical: "https://dragg-finance.vercel.app",
+    canonical: SITE_URL,
   },
   openGraph: {
     type: "website",
-    url: "https://dragg-finance.vercel.app",
-    siteName: "Dragg",
-    title: "Dragg – Open Source Personal Finance Dashboard",
+    url: SITE_URL,
+    siteName: "Dragg-TR",
+    title: "Dragg-TR – Open Source Personal Finance Dashboard",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dragg – Open Source Personal Finance Dashboard",
+    title: "Dragg-TR – Open Source Personal Finance Dashboard",
     description: DESCRIPTION,
   },
   icons: {
@@ -96,20 +98,20 @@ const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("dragg-the
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Dragg",
+  name: "Dragg-TR",
   alternateName: "Dragg Finance",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
   description:
     "Free and open-source personal finance app. Track income, expenses, budgets, goals, and reports. Self-hostable.",
-  inLanguage: "en",
+  inLanguage: ["tr-TR", "en", "pt-BR"],
   offers: {
     "@type": "Offer",
     price: "0",
-    priceCurrency: "BRL",
+    priceCurrency: "TRY",
   },
-  url: "https://dragg-finance.vercel.app",
-  sameAs: ["https://github.com/fsousac/Dragg"],
+  url: SITE_URL,
+  sameAs: [REPOSITORY_URL],
 };
 
 export default function RootLayout({
