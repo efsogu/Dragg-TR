@@ -5,7 +5,7 @@ if (!baseURL) {
   throw new Error("E2E_BASE_URL is required for deployed smoke tests.");
 }
 
-const mode = process.env.DEPLOYED_SMOKE_MODE ?? "signup";
+const mode = process.env.DEPLOYED_SMOKE_MODE ?? "preauth";
 const projects = [
   {
     name: "chromium",
@@ -13,7 +13,7 @@ const projects = [
   },
 ];
 
-if (mode === "login") {
+if (mode === "login" || mode === "preauth") {
   projects.push(
     {
       name: "firefox",
