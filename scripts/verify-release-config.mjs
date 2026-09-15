@@ -1,6 +1,7 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 
 const vercelConfigUrl = new URL("../vercel.json", import.meta.url);
+const workflowsDirUrl = new URL("../.github/workflows/", import.meta.url);
 const productionWorkflowUrl = new URL(
   "../.github/workflows/vercel-production.yml",
   import.meta.url,
@@ -19,12 +20,20 @@ const [
   productionWorkflow,
   releaseGateWorkflow,
   standaloneE2EWorkflow,
+  workflowFileNames,
 ] = await Promise.all([
   readFile(vercelConfigUrl, "utf8"),
   readFile(productionWorkflowUrl, "utf8"),
   readFile(releaseGateUrl, "utf8"),
   readFile(standaloneE2EUrl, "utf8"),
+  readdir(workflowsDirUrl),
 ]);
+
+const workflowFiles = await Promise.all(
+  workflowFileNames
+    .filter((name) => /\.ya?ml$/i.test(name))
+    .map(async (name) => [name, await readFile(new URL(name, workflowsDirUrl), "utf8")]),
+);
 
 const config = JSON.parse(vercelConfigText);
 const deploymentEnabled = config?.git?.deploymentEnabled;
@@ -160,11 +169,53 @@ function assertNode24ActionPins(workflowName, workflowText, requireUpload) {
   }
 }
 
+function assertWorkflowSupplyChain(workflowName, workflowText) {
+  if (workflowText.includes("runs-on: ubuntu-latest")) {
+    throw new Error(
+      `CI reproducibility invariant failed: ${workflowName} must not use ubuntu-latest.`,
+    );
+  }
+
+  const usesPattern = /^\s*-?\s*uses:\s*([^\s#]+)\s*(?:#.*)?$/gm;
+  for (const match of workflowText.matchAll(usesPattern)) {
+    const action = match[1];
+    if (action.startsWith("./")) continue;
+    if (!/@[0-9a-f]{40}$/i.test(action)) {
+      throw new Error(
+        `Supply-chain invariant failed: ${workflowName} action ${action} must be pinned to a full 40-character commit SHA.`,
+      );
+    }
+  }
+
+  const expectedByPrefix = [
+    ["actions/checkout@", actionPins.checkout],
+    ["actions/setup-node@", actionPins.setupNode],
+    ["actions/upload-artifact@", actionPins.uploadArtifact],
+  ];
+
+  for (const [prefix, expected] of expectedByPrefix) {
+    const referenced = workflowText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.includes(`uses: ${prefix}`));
+
+    if (referenced.some((line) => !line.includes(expected))) {
+      throw new Error(
+        `Action runtime invariant failed: ${workflowName} must use approved Node 24 pin ${expected}.`,
+      );
+    }
+  }
+}
+
 assertPinnedSupabaseCli("Dragg-TR Release Gate", releaseGateWorkflow);
 assertPinnedSupabaseCli("standalone E2E", standaloneE2EWorkflow);
 assertNode24ActionPins("production deploy", productionWorkflow, false);
 assertNode24ActionPins("Dragg-TR Release Gate", releaseGateWorkflow, true);
 assertNode24ActionPins("standalone E2E", standaloneE2EWorkflow, true);
+
+for (const [workflowName, workflowText] of workflowFiles) {
+  assertWorkflowSupplyChain(workflowName, workflowText);
+}
 
 console.log("VERCEL_MAIN_NATIVE_AUTODEPLOY_DISABLED");
 console.log("VERCEL_PRODUCTION_PUSH_ONLY_GATE_ENFORCED");
@@ -175,3 +226,4 @@ console.log("VERCEL_PRODUCTION_PERMISSIONS_MINIMIZED");
 console.log("SUPABASE_CLI_PINNED=2.117.0");
 console.log("CI_RUNNER_PINNED=ubuntu-24.04");
 console.log("GITHUB_ACTION_RUNTIME_PINS_NODE24_ENFORCED");
+console.log(`WORKFLOW_SUPPLY_CHAIN_SCAN_PASS=${workflowFiles.length}`);
