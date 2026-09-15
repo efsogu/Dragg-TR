@@ -39,6 +39,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
+      E2E_TEST_AUTH: "1",
       PORT: port,
     },
   },

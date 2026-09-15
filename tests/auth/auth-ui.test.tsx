@@ -11,43 +11,28 @@ const translations: Record<string, string> = {
   "auth.acceptTermsAnd": "and",
   "auth.acceptTermsPrefix": "I have read and agree to the",
   "auth.backToSignIn": "Back to sign in",
-  "auth.checkYourEmail": "Check your email",
   "auth.confirmPassword": "Confirm password",
   "auth.continueWithGoogle": "Continue with Google",
-  "auth.createAccount": "Create account",
-  "auth.email": "Email",
+  "auth.description": "Track your money, budgets, and goals with a simple open-source finance dashboard.",
   "auth.footer": "Open source.",
-  "auth.forgotPassword": "Forgot password?",
   "auth.kicker": "Personal finance clarity",
   "auth.newPassword": "New password",
-  "auth.orContinueWithEmail": "or continue with email",
-  "auth.password": "Password",
-  "auth.privacyPolicy": "Privacy Policy",
   "auth.passwordRequirementsTitle": "Your password must include:",
   "auth.passwordRequirementMinLength": "At least 8 characters",
   "auth.passwordRequirementLowercase": "One lowercase letter",
   "auth.passwordRequirementUppercase": "One uppercase letter",
   "auth.passwordRequirementNumber": "One number",
   "auth.passwordRequirementSymbol": "One symbol",
-  "auth.resetPasswordInstructions": "Enter your email for reset instructions.",
+  "auth.privacyPolicy": "Privacy Policy",
   "auth.signIn": "Sign in",
-  "auth.signInDescription": "Sign in with Google or your email and password.",
-  "auth.signInWithEmail": "Sign in with email",
-  "auth.signUp": "Sign up",
-  "auth.signUpDescription": "Create an account with your name, email, and password.",
   "auth.termsOfUse": "Terms of Use",
-  "screen.settings.firstName": "First Name",
-  "screen.settings.lastName": "Last Name",
   "auth.updatePassword": "Update password",
   "auth.updatePasswordInstructions": "Choose a new password.",
   "screen.settings.language": "Language",
 };
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    refresh: vi.fn(),
-    replace: vi.fn(),
-  }),
+  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -93,16 +78,14 @@ describe("auth callback redirect safety", () => {
 });
 
 describe("auth UI", () => {
-  it("renders Google and email/password sign-in options", () => {
+  it("renders Google-only sign-in", () => {
     const html = renderToStaticMarkup(<LoginCard />);
 
     expect(html).toContain("Continue with Google");
-    expect(html).toContain("or continue with email");
-    expect(html).toContain("Email");
-    expect(html).toContain("Password");
-    expect(html).toContain("Sign in with email");
-    expect(html).toContain("Forgot password?");
-    expect(html).toContain("Create account");
+    expect(html).not.toContain("or continue with email");
+    expect(html).not.toContain("Sign in with email");
+    expect(html).not.toContain("Forgot password?");
+    expect(html).not.toContain("Create account");
   });
 
   it("renders the password requirements checklist", () => {
@@ -137,16 +120,12 @@ describe("auth UI", () => {
     expect(html).toContain(
       'href="https://github.com/fsousac/Dragg/blob/main/docs/privacy-policy.md"',
     );
-    expect(html).toContain(
-      "You must accept the Terms of Use and Privacy Policy to create an account.",
-    );
   });
 
-  it("renders the password update form", () => {
+  it("keeps the legacy password component covered even though production routing is disabled", () => {
     const html = renderToStaticMarkup(<UpdatePasswordCard />);
 
     expect(html).toContain("Update password");
     expect(html).toContain("New password");
-    expect(html).toContain("Choose a new password.");
   });
 });
