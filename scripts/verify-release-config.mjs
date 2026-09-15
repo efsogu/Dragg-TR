@@ -123,6 +123,40 @@ if (productionWorkflow.includes("checks: read")) {
   );
 }
 
+const hostedAuthJobMarker = "\n  hosted-auth-preflight:";
+const releaseReadyJobMarker = "\n  release-ready:";
+const hostedAuthJobIndex = releaseGateWorkflow.indexOf(hostedAuthJobMarker);
+const releaseReadyJobIndex = releaseGateWorkflow.indexOf(releaseReadyJobMarker);
+
+if (hostedAuthJobIndex < 0) {
+  throw new Error(
+    "Hosted auth invariant failed: Dragg-TR Release Gate must define a hosted-auth-preflight job.",
+  );
+}
+
+if (
+  !releaseGateWorkflow.includes(
+    "node scripts/verify-hosted-auth-provider.mjs",
+  )
+) {
+  throw new Error(
+    "Hosted auth invariant failed: Release Gate must run verify-hosted-auth-provider.mjs.",
+  );
+}
+
+if (releaseReadyJobIndex < 0) {
+  throw new Error(
+    "Release safety invariant failed: Dragg-TR Release Gate must define release-ready.",
+  );
+}
+
+const releaseReadySection = releaseGateWorkflow.slice(releaseReadyJobIndex);
+if (!releaseReadySection.includes("- hosted-auth-preflight")) {
+  throw new Error(
+    "Hosted auth invariant failed: release-ready must depend on hosted-auth-preflight.",
+  );
+}
+
 function assertPinnedSupabaseCli(workflowName, workflowText) {
   if (workflowText.includes("version: latest")) {
     throw new Error(
@@ -247,6 +281,7 @@ console.log("VERCEL_PRODUCTION_TRUSTED_MAIN_SHA_MATCH_ENFORCED");
 console.log("VERCEL_PRODUCTION_RUNNER_PINNED=ubuntu-24.04");
 console.log("VERCEL_PRODUCTION_CLI_PINNED=59.16.0");
 console.log("VERCEL_PRODUCTION_PERMISSIONS_MINIMIZED");
+console.log("HOSTED_AUTH_PREFLIGHT_ENFORCED");
 console.log("SUPABASE_CLI_PINNED=2.117.0");
 console.log("CI_RUNNER_PINNED=ubuntu-24.04");
 console.log("GITHUB_ACTION_RUNTIME_PINS_NODE24_ENFORCED");
