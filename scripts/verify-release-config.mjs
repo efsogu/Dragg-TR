@@ -169,6 +169,35 @@ function assertNode24ActionPins(workflowName, workflowText, requireUpload) {
   }
 }
 
+function getExternalActions(workflowText) {
+  const actions = [];
+
+  for (const line of workflowText.split("\n")) {
+    const trimmed = line.trimStart();
+    let marker = null;
+
+    if (trimmed.startsWith("- uses:")) {
+      marker = "- uses:";
+    } else if (trimmed.startsWith("uses:")) {
+      marker = "uses:";
+    }
+
+    if (!marker) continue;
+
+    const valueWithComment = trimmed.slice(marker.length).trim();
+    const commentIndex = valueWithComment.indexOf(" #");
+    const action = (
+      commentIndex >= 0
+        ? valueWithComment.slice(0, commentIndex)
+        : valueWithComment
+    ).trim();
+
+    if (action && !action.startsWith("./")) actions.push(action);
+  }
+
+  return actions;
+}
+
 function assertWorkflowSupplyChain(workflowName, workflowText) {
   if (workflowText.includes("runs-on: ubuntu-latest")) {
     throw new Error(
@@ -176,10 +205,8 @@ function assertWorkflowSupplyChain(workflowName, workflowText) {
     );
   }
 
-  const usesPattern = /^\s*-?\s*uses:\s*([^\s#]+)\s*(?:#.*)?$/gm;
-  for (const match of workflowText.matchAll(usesPattern)) {
-    const action = match[1];
-    if (action.startsWith("./")) continue;
+  const externalActions = getExternalActions(workflowText);
+  for (const action of externalActions) {
     if (!/@[0-9a-f]{40}$/i.test(action)) {
       throw new Error(
         `Supply-chain invariant failed: ${workflowName} action ${action} must be pinned to a full 40-character commit SHA.`,
@@ -194,12 +221,9 @@ function assertWorkflowSupplyChain(workflowName, workflowText) {
   ];
 
   for (const [prefix, expected] of expectedByPrefix) {
-    const referenced = workflowText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.includes(`uses: ${prefix}`));
+    const referenced = externalActions.filter((action) => action.startsWith(prefix));
 
-    if (referenced.some((line) => !line.includes(expected))) {
+    if (referenced.some((action) => action !== expected)) {
       throw new Error(
         `Action runtime invariant failed: ${workflowName} must use approved Node 24 pin ${expected}.`,
       );
