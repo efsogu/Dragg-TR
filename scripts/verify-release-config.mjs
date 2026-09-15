@@ -48,6 +48,46 @@ if (!productionWorkflow.includes('test "$ACTUAL_SHA" = "$GATED_SHA"')) {
   );
 }
 
+if (!productionWorkflow.includes("runs-on: ubuntu-24.04")) {
+  throw new Error(
+    "Release reproducibility invariant failed: production deploy runner must be pinned to ubuntu-24.04.",
+  );
+}
+
+if (!productionWorkflow.includes("VERCEL_CLI_VERSION: 59.16.0")) {
+  throw new Error(
+    "Release reproducibility invariant failed: Vercel CLI must be pinned to 59.16.0.",
+  );
+}
+
+if (productionWorkflow.includes("vercel@latest")) {
+  throw new Error(
+    "Release reproducibility invariant failed: production deploy must not install vercel@latest.",
+  );
+}
+
+if (
+  !productionWorkflow.includes(
+    'npm install --global "vercel@${VERCEL_CLI_VERSION}"',
+  )
+) {
+  throw new Error(
+    "Release reproducibility invariant failed: production deploy must install the declared VERCEL_CLI_VERSION.",
+  );
+}
+
+if (
+  !productionWorkflow.includes(
+    'test "$ACTUAL_VERSION" = "$VERCEL_CLI_VERSION"',
+  )
+) {
+  throw new Error(
+    "Release reproducibility invariant failed: production deploy must verify the installed Vercel CLI version before use.",
+  );
+}
+
 console.log("VERCEL_MAIN_NATIVE_AUTODEPLOY_DISABLED");
 console.log("VERCEL_PRODUCTION_PUSH_ONLY_GATE_ENFORCED");
 console.log("VERCEL_PRODUCTION_TRUSTED_MAIN_SHA_MATCH_ENFORCED");
+console.log("VERCEL_PRODUCTION_RUNNER_PINNED=ubuntu-24.04");
+console.log("VERCEL_PRODUCTION_CLI_PINNED=59.16.0");
