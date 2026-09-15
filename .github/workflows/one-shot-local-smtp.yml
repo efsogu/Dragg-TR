@@ -1,0 +1,56 @@
+name: One-shot local SMTP config migration
+
+on:
+  push:
+    branches:
+      - chore/dragg-tr-staging
+    paths:
+      - .github/workflows/one-shot-local-smtp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    name: Replace deprecated inbucket config
+    if: github.event.head_commit.message == 'chore: add one-shot local SMTP migration'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: chore/dragg-tr-staging
+
+      - name: Replace deprecated config section exactly once
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("supabase/config.toml")
+          text = path.read_text(encoding="utf-8")
+          needle = "\n[inbucket]\n"
+          replacement = "\n[local_smtp]\n"
+
+          count = text.count(needle)
+          if count != 1:
+              raise SystemExit(f"Expected exactly one [inbucket] section, found {count}")
+
+          updated = text.replace(needle, replacement, 1)
+          if "\n[inbucket]\n" in updated:
+              raise SystemExit("Deprecated [inbucket] section still present")
+          if updated.count(replacement) != 1:
+              raise SystemExit("Expected exactly one [local_smtp] section after migration")
+
+          path.write_text(updated, encoding="utf-8")
+
+      - name: Commit migration and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/config.toml
+          git rm .github/workflows/one-shot-local-smtp.yml
+          git diff --cached --check
+          git commit -m "chore: migrate local SMTP config section"
+          git push origin HEAD:chore/dragg-tr-staging
