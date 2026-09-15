@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 
+function GoogleButtonIcon({ isLoading }: { isLoading: boolean }) {
+  return isLoading ? (
+    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+  ) : (
+    <Image src="/google-logo.svg" alt="" width={24} height={24} aria-hidden="true" />
+  );
+}
+
 export function GoogleLoginButton() {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,15 +30,11 @@ export function GoogleLoginButton() {
       const supabase = createClient();
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-
-      if (signInError) {
-        setError(t("auth.oauthError"));
-        setIsLoading(false);
-      }
+      if (!signInError) return;
+      setError(t("auth.oauthError"));
+      setIsLoading(false);
     } catch (oauthError) {
       console.error("Unable to start Google OAuth:", oauthError);
       setError(t("auth.oauthError"));
@@ -47,25 +51,10 @@ export function GoogleLoginButton() {
         size="lg"
         type="button"
       >
-        {isLoading ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <Image
-            src="/google-logo.svg"
-            alt=""
-            width={24}
-            height={24}
-            aria-hidden="true"
-          />
-        )}
+        <GoogleButtonIcon isLoading={isLoading} />
         {t("auth.continueWithGoogle")}
       </Button>
-
-      {error ? (
-        <p className="text-center text-sm text-red-300" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="text-center text-sm text-red-300" role="alert">{error}</p> : null}
     </div>
   );
 }
