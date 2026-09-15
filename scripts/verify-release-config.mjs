@@ -29,6 +29,13 @@ const [
 const config = JSON.parse(vercelConfigText);
 const deploymentEnabled = config?.git?.deploymentEnabled;
 
+const actionPins = {
+  checkout: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+  setupNode: "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
+  uploadArtifact:
+    "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+};
+
 if (
   !deploymentEnabled ||
   typeof deploymentEnabled !== "object" ||
@@ -133,8 +140,31 @@ function assertPinnedSupabaseCli(workflowName, workflowText) {
   }
 }
 
+function assertNode24ActionPins(workflowName, workflowText, requireUpload) {
+  if (!workflowText.includes(actionPins.checkout)) {
+    throw new Error(
+      `Action runtime invariant failed: ${workflowName} must use SHA-pinned actions/checkout v7.0.1 (Node 24).`,
+    );
+  }
+
+  if (!workflowText.includes(actionPins.setupNode)) {
+    throw new Error(
+      `Action runtime invariant failed: ${workflowName} must use SHA-pinned actions/setup-node v7.0.0 (Node 24).`,
+    );
+  }
+
+  if (requireUpload && !workflowText.includes(actionPins.uploadArtifact)) {
+    throw new Error(
+      `Action runtime invariant failed: ${workflowName} must use SHA-pinned actions/upload-artifact v7.0.1 (Node 24).`,
+    );
+  }
+}
+
 assertPinnedSupabaseCli("Dragg-TR Release Gate", releaseGateWorkflow);
 assertPinnedSupabaseCli("standalone E2E", standaloneE2EWorkflow);
+assertNode24ActionPins("production deploy", productionWorkflow, false);
+assertNode24ActionPins("Dragg-TR Release Gate", releaseGateWorkflow, true);
+assertNode24ActionPins("standalone E2E", standaloneE2EWorkflow, true);
 
 console.log("VERCEL_MAIN_NATIVE_AUTODEPLOY_DISABLED");
 console.log("VERCEL_PRODUCTION_PUSH_ONLY_GATE_ENFORCED");
@@ -144,3 +174,4 @@ console.log("VERCEL_PRODUCTION_CLI_PINNED=59.16.0");
 console.log("VERCEL_PRODUCTION_PERMISSIONS_MINIMIZED");
 console.log("SUPABASE_CLI_PINNED=2.117.0");
 console.log("CI_RUNNER_PINNED=ubuntu-24.04");
+console.log("GITHUB_ACTION_RUNTIME_PINS_NODE24_ENFORCED");
