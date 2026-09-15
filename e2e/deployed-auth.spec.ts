@@ -8,7 +8,9 @@ async function selectLanguage(
   page: import("@playwright/test").Page,
   language: "English" | "Türkçe",
 ) {
-  await page.getByRole("combobox", { name: "Language" }).click();
+  await page
+    .getByRole("combobox", { name: /^(Language|Dil|Idioma)$/ })
+    .click();
   await page.getByRole("option", { name: language, exact: true }).click();
 }
 
