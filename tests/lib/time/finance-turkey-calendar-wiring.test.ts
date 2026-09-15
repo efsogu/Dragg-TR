@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 describe("finance core Turkey calendar wiring", () => {
   it("uses the Istanbul calendar helpers for the current day and month", () => {
     const source = readFileSync(
-      new URL("../../../lib/finance/transactions.ts", import.meta.url),
+      join(process.cwd(), "lib/finance/transactions.ts"),
       "utf8",
     );
 
