@@ -6,6 +6,7 @@ import {
   updateCategoryAction,
 } from "@/app/transactions/actions"
 import { listCategoryOverview } from "@/lib/finance/transactions"
+import { getTurkeyMonthValue } from "@/lib/time/turkey-calendar"
 
 type CategoriesPageProps = {
   searchParams?: Promise<{
@@ -17,9 +18,10 @@ export default async function CategoriesPage({
   searchParams,
 }: CategoriesPageProps) {
   const resolvedSearchParams = await searchParams;
-  const selectedMonth = Array.isArray(resolvedSearchParams?.month)
+  const selectedMonthParam = Array.isArray(resolvedSearchParams?.month)
     ? resolvedSearchParams.month[0]
     : resolvedSearchParams?.month;
+  const selectedMonth = selectedMonthParam ?? getTurkeyMonthValue();
   const categories = await listCategoryOverview(selectedMonth)
 
   return (
