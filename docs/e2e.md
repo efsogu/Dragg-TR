@@ -10,7 +10,7 @@ The authenticated finance suite runs against a real disposable local Supabase st
 
 Prerequisites:
 
-- Supabase CLI
+- Supabase CLI 2.117.0 (the CI-pinned version)
 - Docker
 - Node.js 24
 - pnpm 11.22.0
@@ -53,5 +53,7 @@ Do not mark hosted OAuth PASS when the Google provider is disabled or when only 
 ## CI
 
 The `Dragg-TR Release Gate` starts a clean local Supabase environment, applies every committed migration in order, exports local public environment values, runs the Playwright suite and blocks release if any job fails.
+
+For reproducibility, the release-gate and standalone E2E jobs run on `ubuntu-24.04`, pin Supabase CLI `2.117.0`, and verify the installed CLI version before starting the local stack. Production deployment separately pins Vercel CLI `59.16.0` and verifies that version before use.
 
 Separate workflows run dependency audit, CodeQL, Semgrep, Trivy and ZAP checks. The release gate should be required before production promotion from `main`.
