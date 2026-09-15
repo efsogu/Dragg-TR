@@ -1,0 +1,67 @@
+name: Deployed Smoke
+
+on:
+  push:
+    branches:
+      - chore/dragg-tr-staging
+    paths:
+      - .github/deployed-smoke/mode.txt
+      - .github/workflows/deployed-smoke.yml
+      - playwright.deployed.config.ts
+      - e2e/deployed-auth.spec.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployed-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deployed-smoke:
+    name: Deployed auth/browser smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Read deployed smoke mode
+        shell: bash
+        run: |
+          MODE=$(tr -d '\r\n ' < .github/deployed-smoke/mode.txt)
+          echo "DEPLOYED_SMOKE_MODE=$MODE" >> "$GITHUB_ENV"
+          echo "Deployed smoke mode: $MODE"
+
+      - name: Run deployed Playwright smoke
+        run: pnpm exec playwright test --config=playwright.deployed.config.ts
+        env:
+          CI: true
+          E2E_BASE_URL: https://dragg-tr-erdemgunt-s-projects.vercel.app
+
+      - name: Upload deployed smoke report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deployed-smoke-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 7
