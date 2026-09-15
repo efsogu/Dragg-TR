@@ -43,6 +43,9 @@ jobs:
       - name: Verify security dependency pins
         run: node scripts/verify-security-versions.mjs
 
+      - name: Verify Vercel production release gate
+        run: node scripts/verify-release-config.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
