@@ -7,22 +7,25 @@ const turkeyCalendarFormatter = new Intl.DateTimeFormat("en-CA", {
   year: "numeric",
 });
 
-function getTurkeyCalendarParts(date: Date) {
-  const values = new Map(
+type TurkeyCalendarParts = {
+  day: string;
+  month: string;
+  year: string;
+};
+
+function getTurkeyCalendarParts(date: Date): TurkeyCalendarParts {
+  const values = Object.fromEntries(
     turkeyCalendarFormatter
       .formatToParts(date)
       .filter((part) => part.type !== "literal")
       .map((part) => [part.type, part.value]),
-  );
-  const year = values.get("year");
-  const month = values.get("month");
-  const day = values.get("day");
+  ) as TurkeyCalendarParts;
 
-  if (!year || !month || !day) {
-    throw new Error("Unable to resolve Turkey calendar date.");
-  }
-
-  return { day, month, year };
+  return {
+    day: values.day,
+    month: values.month,
+    year: values.year,
+  };
 }
 
 export function getTurkeyDateValue(date = new Date()) {
