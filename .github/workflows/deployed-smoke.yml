@@ -1,14 +1,19 @@
 name: Deployed Smoke
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Vercel Production Deploy
+    types:
+      - completed
     branches:
-      - chore/dragg-tr-staging
-    paths:
-      - .github/deployed-smoke/mode.txt
-      - .github/workflows/deployed-smoke.yml
-      - playwright.deployed.config.ts
-      - e2e/deployed-auth.spec.ts
+      - main
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public deployment URL to smoke
+        required: true
+        default: https://dragg-tr.vercel.app
 
 permissions:
   contents: read
@@ -22,6 +27,9 @@ jobs:
     name: Deployed auth/browser smoke
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout
@@ -56,7 +64,7 @@ jobs:
         run: pnpm exec playwright test --config=playwright.deployed.config.ts
         env:
           CI: true
-          E2E_BASE_URL: https://dragg-tr.vercel.app
+          E2E_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'https://dragg-tr.vercel.app' }}
 
       - name: Upload deployed smoke report
         if: always()
