@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/dashboard/app-shell"
 import { ReportsScreen } from "@/components/dashboard/reports-screen"
 import { getReportsData } from "@/lib/finance/transactions"
+import { getTurkeyMonthValue } from "@/lib/time/turkey-calendar"
 
 type ReportsPageProps = {
   searchParams?: Promise<{
@@ -11,9 +12,10 @@ type ReportsPageProps = {
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const resolvedSearchParams = await searchParams;
-  const selectedMonth = Array.isArray(resolvedSearchParams?.month)
+  const selectedMonthParam = Array.isArray(resolvedSearchParams?.month)
     ? resolvedSearchParams.month[0]
     : resolvedSearchParams?.month;
+  const selectedMonth = selectedMonthParam ?? getTurkeyMonthValue();
   const selectedPeriod = Array.isArray(resolvedSearchParams?.period)
     ? resolvedSearchParams.period[0]
     : resolvedSearchParams?.period;
