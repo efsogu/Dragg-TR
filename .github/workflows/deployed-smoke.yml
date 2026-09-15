@@ -56,7 +56,7 @@ jobs:
         run: pnpm exec playwright test --config=playwright.deployed.config.ts
         env:
           CI: true
-          E2E_BASE_URL: https://dragg-tr-erdemgunt-s-projects.vercel.app
+          E2E_BASE_URL: https://dragg-tr.vercel.app
 
       - name: Upload deployed smoke report
         if: always()
