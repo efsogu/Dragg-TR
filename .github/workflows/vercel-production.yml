@@ -20,7 +20,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy after release gate passes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -30,6 +30,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       GATED_SHA: ${{ github.event.workflow_run.head_sha }}
+      VERCEL_CLI_VERSION: 59.16.0
 
     steps:
       - name: Checkout trusted main branch
@@ -54,8 +55,14 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Install pinned Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+
+      - name: Verify Vercel CLI version
+        shell: bash
+        run: |
+          ACTUAL_VERSION="$(vercel --version | awk '{print $NF}')"
+          test "$ACTUAL_VERSION" = "$VERCEL_CLI_VERSION"
 
       - name: Pull Vercel production environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
