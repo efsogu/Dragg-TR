@@ -101,12 +101,12 @@ describe("auth UI", () => {
     expect(html).toContain("One symbol");
   });
 
-  it("renders the terms acceptance checkbox with links and an error", () => {
+  it("renders the terms acceptance checkbox with Dragg-TR legal links and an error", () => {
     const html = renderToStaticMarkup(
       <TermsAcceptanceCheckbox
         checked={false}
         disabled={false}
-        error="You must accept the Terms of Use and Privacy Policy to create an account."
+        error="You must accept the Terms of Use and Privacy Policy to continue."
         onCheckedChange={() => {}}
       />,
     );
@@ -115,10 +115,10 @@ describe("auth UI", () => {
     expect(html).toContain("Terms of Use");
     expect(html).toContain("Privacy Policy");
     expect(html).toContain(
-      'href="https://github.com/fsousac/Dragg/blob/main/docs/terms-of-use.md"',
+      'href="https://github.com/efsogu/Dragg-TR/blob/main/docs/terms-of-use.md"',
     );
     expect(html).toContain(
-      'href="https://github.com/fsousac/Dragg/blob/main/docs/privacy-policy.md"',
+      'href="https://github.com/efsogu/Dragg-TR/blob/main/docs/privacy-policy.md"',
     );
   });
 

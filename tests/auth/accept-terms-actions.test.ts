@@ -11,16 +11,21 @@ vi.mock("next/navigation", () => ({
 
 import { acceptTermsAction } from "@/app/auth/accept-terms/actions";
 
-function mockSupabase(user: { id: string } | null) {
-  const eq = vi.fn().mockResolvedValue({ data: null, error: null });
-  const update = vi.fn(() => ({ eq }));
-  const from = vi.fn(() => ({ update }));
+function acceptedTermsForm() {
+  const formData = new FormData();
+  formData.set("acceptTerms", "true");
+  return formData;
+}
+
+function mockSupabase(
+  user: { id: string } | null,
+  rpcError: Error | null = null,
+) {
+  const rpc = vi.fn().mockResolvedValue({ data: null, error: rpcError });
 
   return {
     auth: { getUser: vi.fn().mockResolvedValue({ data: { user } }) },
-    from,
-    update,
-    eq,
+    rpc,
   };
 }
 
@@ -29,20 +34,40 @@ describe("acceptTermsAction", () => {
     vi.clearAllMocks();
   });
 
-  it("redirects home when there is no authenticated user", async () => {
-    createClient.mockResolvedValue(mockSupabase(null));
-
-    await expect(acceptTermsAction()).rejects.toThrow("REDIRECT:/");
+  it("fails closed when the submitted form does not explicitly accept the terms", async () => {
+    await expect(acceptTermsAction(new FormData())).rejects.toThrow(
+      "Terms acceptance is required",
+    );
+    expect(createClient).not.toHaveBeenCalled();
   });
 
-  it("records acceptance for the current user and redirects to the dashboard", async () => {
+  it("redirects home when there is no authenticated user", async () => {
+    const supabase = mockSupabase(null);
+    createClient.mockResolvedValue(supabase);
+
+    await expect(acceptTermsAction(acceptedTermsForm())).rejects.toThrow(
+      "REDIRECT:/",
+    );
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("records acceptance through the hardened RPC and redirects to the dashboard", async () => {
     const supabase = mockSupabase({ id: "user-1" });
     createClient.mockResolvedValue(supabase);
 
-    await expect(acceptTermsAction()).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(acceptTermsAction(acceptedTermsForm())).rejects.toThrow(
+      "REDIRECT:/dashboard",
+    );
 
-    expect(supabase.from).toHaveBeenCalledWith("profiles");
-    expect(supabase.update).toHaveBeenCalledWith({ terms_accepted: true });
-    expect(supabase.eq).toHaveBeenCalledWith("id", "user-1");
+    expect(supabase.rpc).toHaveBeenCalledWith("accept_terms");
+  });
+
+  it("does not redirect to the dashboard when persistence fails", async () => {
+    const supabase = mockSupabase({ id: "user-1" }, new Error("db"));
+    createClient.mockResolvedValue(supabase);
+
+    await expect(acceptTermsAction(acceptedTermsForm())).rejects.toThrow(
+      "Unable to record terms acceptance",
+    );
   });
 });

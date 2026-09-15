@@ -1,62 +1,62 @@
 # Terms of Use
 
-> **Status: Draft.** This document was drafted from the current implementation of the Dragg codebase to satisfy the sign-up consent requirement. It has not been reviewed by a lawyer and should not be treated as final or legally binding until a maintainer (or qualified legal counsel) reviews and approves it. See [Terms version history](#terms-version-history).
+> **Status: Draft.** This document is an implementation-aligned project draft, not legal advice. It has not been reviewed by qualified legal counsel and must not be represented as final legal terms until reviewed and approved.
 
-**Version 0.1.0-draft — Last updated: 2026-07-18**
+**Version 0.2.0-draft — Last updated: 2026-09-15**
 
-## 1. Purpose of the platform
+## 1. Purpose
 
-Dragg is a free, open-source personal finance dashboard. It helps you track income, expenses, savings, budgets, subscriptions, credit cards, and financial goals, and view reports about your own spending.
+Dragg-TR is a personal finance record-keeping and visualization application. It can help users track income, expenses, budgets, payment methods, installments, subscriptions, savings and goals. It is not a bank, broker, payment provider, tax adviser, investment adviser or regulated financial service, and it does not move money on a user's behalf.
 
-Dragg is provided as-is by its maintainers and contributors on a best-effort, volunteer basis. It is not a bank, a financial institution, a broker, or a regulated financial service, and it does not move money on your behalf.
+## 2. Accounts
 
-## 2. How Dragg works
+The hosted Dragg-TR production interface uses Google OAuth through Supabase Auth. Users are responsible for maintaining the security of their Google account and devices.
 
-- You create an account with Google OAuth or with an email and password, both handled by [Supabase Auth](https://supabase.com/).
-- Once signed in, you manually record your own financial data (transactions, categories, payment methods, budgets, goals, subscriptions, credit cards) so the app can show you dashboards and reports.
-- Dragg does not connect to your bank, card issuer, or any external financial account on your behalf. Any amounts, balances, or due dates you see are only as accurate as the data you (or, for Google sign-in, your Google profile name/photo) provided.
-- The project is self-hostable: anyone can deploy their own copy of Dragg using their own Supabase project and hosting provider, in which case this document describes the reference/hosted deployment maintained by the project, not a self-hosted fork.
+A new Google-authenticated user must explicitly accept these draft Terms and the Privacy Policy before dashboard access. Acceptance is stored in the user's Dragg-TR profile.
 
-## 3. Accounts and eligibility
+## 3. Your data
 
-- You must provide accurate information when creating an account.
-- You are responsible for keeping your password confidential and for all activity under your account.
-- You must be legally able to enter into these Terms under the laws that apply to you.
+You retain responsibility for the financial data you enter. You should not enter passwords, bank credentials, payment-card numbers, government identity numbers or other unnecessary secrets into transaction descriptions, notes or other free-text fields.
 
 ## 4. Acceptable use
 
 You agree not to:
 
-- Use Dragg for any unlawful purpose or to store data you do not have the right to store.
-- Attempt to bypass authentication, Row Level Security, or other access controls.
-- Interfere with the availability or integrity of the service (e.g., automated abuse, scraping at scale, denial-of-service).
-- Use another person's account without permission.
+- use Dragg-TR for unlawful activity;
+- store data you do not have the right to process;
+- bypass authentication, Row Level Security or other access controls;
+- interfere with service integrity or availability;
+- use another person's account without authorization.
 
-## 5. Your content
+## 5. Accuracy and financial decisions
 
-You retain ownership of the financial data you enter into Dragg. By using the app you grant the operator of this deployment the limited right to store and process that data solely to provide the app's functionality to you, as described in the [Privacy Policy](./privacy-policy.md).
+Dragg-TR calculations and reports depend on the data entered by the user. They may contain errors, omissions or delays and should not be relied upon as professional financial, tax, accounting, legal or investment advice.
 
-## 6. Open source and licensing
+## 6. Open source
 
-Dragg's source code is published under the MIT License in the [GitHub repository](https://github.com/fsousac/Dragg). The MIT License governs the code itself; these Terms govern your use of a running instance of the app (for example, the maintainers' hosted deployment).
+Dragg-TR is based on the open-source Dragg project and the code in this repository is distributed under the MIT License. The software license governs the source code; these draft Terms describe use of a hosted instance.
 
-## 7. Limitations and disclaimer
+Repository: https://github.com/efsogu/Dragg-TR
 
-- Dragg is provided "as is," without warranties of any kind, express or implied, including fitness for a particular purpose, accuracy, or availability.
-- Dragg is a personal record-keeping and visualization tool. It does not provide financial, tax, investment, or legal advice, and nothing in the app should be treated as such.
-- To the maximum extent permitted by applicable law, the maintainers and contributors are not liable for any loss or damage arising from your use of, or inability to use, the app, including data loss.
-- The service may be modified, suspended, or discontinued at any time, with or without notice, given its open-source and volunteer-maintained nature.
+## 7. Availability and warranties
 
-## 8. Changes to these Terms
+The software and any hosted instance are provided on an “as is” and “as available” basis to the extent permitted by applicable law. Availability, correctness, data retention and uninterrupted operation are not guaranteed.
 
-Material changes to these Terms will be reflected in this file and recorded in the [Terms version history](#terms-version-history) below, since the document is version-controlled in the public GitHub repository.
+## 8. Privacy
 
-## 9. Contact
+Please read the [Privacy Policy](./privacy-policy.md) for the project's current implementation-level description of personal-data handling. That document is also a draft pending legal review.
 
-Questions about these Terms can be raised as a [GitHub issue](https://github.com/fsousac/Dragg/issues). For account-specific or sensitive requests, see the "Contact and requests" section of the [Privacy Policy](./privacy-policy.md).
+## 9. Changes
 
-## Terms version history
+Material implementation or policy changes should be recorded in version control and reflected in this document. A final legal process, notice mechanism and versioned re-consent policy should be defined before broader production use.
+
+## 10. Contact
+
+For project-level questions, use the Dragg-TR repository. Do not post sensitive account or financial information in a public issue.
+
+## Version history
 
 | Version | Date | Change |
 |---|---|---|
-| 0.1.0-draft | 2026-07-18 | Initial draft, pending maintainer review, created alongside the sign-up consent checkbox. |
+| 0.2.0-draft | 2026-09-15 | Aligned the draft with Dragg-TR Google-only authentication and current repository ownership; retained explicit pending-legal-review status. |
+| 0.1.0-draft | 2026-07-18 | Initial upstream draft. |

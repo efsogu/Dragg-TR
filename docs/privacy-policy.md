@@ -1,82 +1,81 @@
 # Privacy Policy
 
-> **Status: Draft.** This document was drafted from the current implementation of the Dragg codebase to satisfy the sign-up consent requirement. It has not been reviewed by a lawyer and should not be treated as final or legally binding until a maintainer (or qualified legal counsel) reviews and approves it. See [Terms version history](#policy-version-history).
+> **Status: Draft.** This is an implementation-aligned project draft, not legal advice and not a claim of compliance with KVKK, GDPR or any other privacy law. Qualified legal review is required before treating it as a final privacy notice.
 
-**Version 0.1.0-draft — Last updated: 2026-07-18**
+**Version 0.2.0-draft — Last updated: 2026-09-15**
 
-This Privacy Policy explains what data Dragg collects, how it is stored, and what rights you have over it. It should be read together with the [Terms of Use](./terms-of-use.md).
+This draft describes how the current Dragg-TR implementation handles data.
 
-## 1. Purpose of the platform
+## 1. Data processed
 
-See the [Terms of Use, "Purpose of the platform"](./terms-of-use.md#1-purpose-of-the-platform) for how Dragg works. This policy focuses specifically on data handling.
+Dragg-TR may process:
 
-## 2. Data we collect
+- **Authentication data**: Google account identity information handled through Google OAuth and Supabase Auth, including identifiers, email and profile metadata made available by the provider.
+- **Profile data**: selected profile name/email values used by the application. Dragg-TR stores these application profile fields encrypted at the application layer; this is separate from the identity data Supabase Auth maintains in `auth.users`.
+- **Financial data you enter**: transactions, descriptions, notes, categories, payment methods, budgets, installments, subscriptions and financial goals.
+- **Operational telemetry**: deployment/performance/usage information from the configured hosting and analytics services when enabled.
 
-When you create an account and use Dragg, we store:
+Dragg-TR does not need bank-login credentials or payment-card numbers to provide its current functionality. Users should not enter such secrets into free-text fields.
 
-- **Account/profile data**: name, email address, and (for Google sign-in) profile photo, as provided by Supabase Auth or your Google account.
-- **Authentication data**: managed entirely by Supabase Auth (hashed credentials, OAuth tokens). The app itself never sees or stores your password.
-- **Financial data you enter**: transactions (amount, date, description, notes, category, payment method), categories, payment methods, monthly budgets, financial goals, subscriptions, and credit card details you choose to record.
-- **Basic product analytics**: in production, [Vercel Analytics](https://vercel.com/docs/analytics) and [Vercel Speed Insights](https://vercel.com/docs/speed-insights) collect aggregated, privacy-respecting page-view and performance metrics. These are disabled in local development.
+## 2. Authentication
 
-## 3. Data we do NOT collect
+The hosted production interface is designed for Google-only sign-in through Supabase Auth. Dragg-TR does not receive or store the user's Google password.
 
-- We do not collect or store your bank credentials, card numbers, or any data needed to actually move money — Dragg does not connect to banks or card networks.
-- We do not sell your data to third parties or use it for targeted advertising.
-- We do not track you across other websites or apps.
-- We do not require government ID or other identity documents to use the app.
+After authentication, Supabase issues the application session. New users must explicitly accept the project's Terms/Privacy draft before dashboard access.
 
-## 4. How your data is stored
+## 3. Storage and isolation
 
-- All application data is stored in a [Supabase](https://supabase.com/) Postgres database.
-- User-owned tables (profiles, categories, payment methods, transactions, monthly budgets, goals, and related metadata) enforce Postgres **Row Level Security (RLS)**, so the database itself only returns rows belonging to the authenticated user. See `docs/security.md` and `docs/database.md` for implementation details.
-- Server-side code additionally scopes every read and write by the authenticated user's ID and validates that referenced categories, payment methods, and other records belong to that same user before saving.
-- Free-text fields such as transaction descriptions and notes are treated as sensitive personal data; avoid entering unnecessary sensitive details (such as document numbers) into them.
+Application data is stored in Supabase Postgres. User-owned tables use Row Level Security (RLS) to isolate rows by authenticated user identity. Additional database grants restrict unauthenticated access and limit authenticated operations.
 
-## 5. Security practices
+Selected profile and transaction text fields use application-layer encryption. `FIELD_ENCRYPTION_KEY` is server-only and must be kept stable and confidential by the operator.
 
-- Authentication is handled by Supabase Auth; the app never has access to your raw password.
-- The client only ever uses Supabase's public/publishable key; privileged (service-role) credentials are never exposed to the browser.
-- A strict Content Security Policy and standard security headers are enforced (see `next.config.mjs` and `docs/security.md`).
-- Automated security scanning (dependency audits, static analysis, container/filesystem scanning, and baseline dynamic scanning) runs in CI on every change. See `SECURITY.md` for the full list and for how to report a vulnerability.
+## 4. Service providers
 
-## 6. Technologies used
+Current implementation may rely on:
 
-- **Next.js** (application framework) and **Vercel** (hosting, for the maintainers' deployment).
-- **Supabase** (Postgres database, authentication, row-level security).
-- **Vercel Analytics** and **Vercel Speed Insights** (aggregate usage/performance metrics, production only).
-- **Google OAuth** (optional sign-in method).
+- **Google** for OAuth identity authentication;
+- **Supabase** for authentication, Postgres database and API services;
+- **Vercel** for hosting and deployment-related telemetry/analytics when enabled.
 
-## 7. Third-party integrations and data sharing
+Each provider processes data under its own terms and privacy practices.
 
-- **Supabase**: processes and stores your account and financial data as our database and auth provider.
-- **Google**: if you choose "Continue with Google," Google authenticates you and shares your name, email, and profile photo with Dragg via OAuth, per Google's own privacy terms.
-- **Vercel**: hosts the application and, in production, collects aggregated analytics/performance data through Vercel Analytics and Speed Insights.
-- We do not share your financial data with any other third party, and we do not sell it.
+## 5. Security measures
 
-## 8. User responsibilities
+Current technical measures include:
 
-- Keep your account credentials secure and do not share your account with others.
-- Avoid entering sensitive data (such as ID/document numbers or bank credentials) into free-text fields like transaction notes.
-- Report suspected security or privacy issues per `SECURITY.md`.
+- Google OAuth through Supabase Auth;
+- Row Level Security on user-owned tables;
+- least-privilege database grants;
+- application-layer encryption for selected sensitive fields;
+- server-controlled Terms acceptance;
+- Content Security Policy and standard web security headers;
+- automated dependency, static-analysis, filesystem and baseline web security checks in CI.
 
-## 9. Platform limitations and disclaimer
+No technical measure can guarantee absolute security.
 
-Dragg is a personal record-keeping tool, not a financial institution. See the [Terms of Use, "Limitations and disclaimer"](./terms-of-use.md#7-limitations-and-disclaimer) for the full disclaimer, including that Dragg does not provide financial, tax, or legal advice.
+## 6. User controls and requests
 
-## 10. Your rights
+The application allows users to create, update and delete much of their own finance data. The schema also contains a `privacy_requests` table intended to support access, correction, export, deletion, consent and support workflows.
 
-Depending on where you live, you may have rights to access, correct, export, or delete your personal data (for example, under Brazil's LGPD or comparable data protection laws).
+A complete legally reviewed data-subject request process, retention schedule, controller/contact identity, lawful-basis analysis, international-transfer notice and jurisdiction-specific disclosures are **not finalized in this draft** and must be completed before broader production use where required.
 
-The database schema includes a `privacy_requests` table designed to support access, export, correction, deletion, consent, and support workflows. **As of this draft, there is no self-service UI for these requests yet** — until that ships, please use the contact method below and a maintainer will help you manually. You can also delete individual transactions, categories, budgets, and goals yourself at any time from within the app.
+## 7. Data minimization
 
-## 11. Contact and requests
+Do not enter unnecessary sensitive information into Dragg-TR. In particular, avoid bank credentials, full card numbers, passwords, government identity/document numbers, health information or other unrelated sensitive personal data in transaction notes/descriptions.
 
-- General questions: open a [GitHub issue](https://github.com/fsousac/Dragg/issues).
-- Data access, correction, export, or deletion requests, and security or privacy-sensitive matters: open a private [GitHub Security Advisory](https://github.com/fsousac/Dragg/security/advisories) or contact a maintainer directly, per `SECURITY.md`. Please do not include sensitive account details in a public issue.
+## 8. Open-source deployments
 
-## Policy version history
+Dragg-TR can be self-hosted. A third party that deploys its own copy controls that deployment's infrastructure and configuration and is responsible for its own privacy/legal obligations. This draft describes the reference Dragg-TR implementation, not every possible fork or deployment.
+
+## 9. Contact
+
+Project-level questions may be raised in the Dragg-TR repository. Do not include sensitive account or financial information in public GitHub issues. A final private privacy-contact channel should be established before broad production use.
+
+Repository: https://github.com/efsogu/Dragg-TR
+
+## Version history
 
 | Version | Date | Change |
 |---|---|---|
-| 0.1.0-draft | 2026-07-18 | Initial draft, pending maintainer review, created alongside the sign-up consent checkbox. |
+| 0.2.0-draft | 2026-09-15 | Aligned with Google-only Dragg-TR authentication, Turkey deployment context and current security model; explicitly avoids claiming legal compliance. |
+| 0.1.0-draft | 2026-07-18 | Initial upstream draft. |

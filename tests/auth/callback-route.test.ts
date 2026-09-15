@@ -46,7 +46,7 @@ describe("GET /auth/callback", () => {
     createClient.mockResolvedValue(createSupabaseMock());
   });
 
-  it("exchanges the code and redirects to a safe next path when no session is returned", async () => {
+  it("fails closed to the landing page when code exchange returns no session", async () => {
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=/transactions",
     );
@@ -56,9 +56,22 @@ describe("GET /auth/callback", () => {
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123", undefined);
     expect(setSession).not.toHaveBeenCalled();
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost/transactions",
+    expect(response.headers.get("location")).toBe("http://localhost/");
+  });
+
+  it("fails closed to the landing page when code exchange errors", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: null },
+      error: new Error("oauth"),
+    });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=bad-code&next=/transactions",
     );
+
+    const response = await GET(request);
+
+    expect(response.headers.get("location")).toBe("http://localhost/");
+    expect(setSession).not.toHaveBeenCalled();
   });
 
   it("passes sb_flow_id through so the matching PKCE verifier cookie is cleaned up", async () => {
@@ -150,17 +163,27 @@ describe("GET /auth/callback", () => {
     );
   });
 
-  it("skips the exchange and redirects to /dashboard when there is no code or next param", async () => {
+  it("skips the exchange and returns to the landing page when there is no code", async () => {
     const request = new NextRequest("http://localhost/auth/callback");
 
     const response = await GET(request);
 
     expect(exchangeCodeForSession).not.toHaveBeenCalled();
     expect(createClient).not.toHaveBeenCalled();
-    expect(response.headers.get("location")).toBe("http://localhost/dashboard");
+    expect(response.headers.get("location")).toBe("http://localhost/");
   });
 
-  it("falls back to /dashboard when next points off-site", async () => {
+  it("falls back to /dashboard when next points off-site after a valid session", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "at-123",
+          refresh_token: "rt-456",
+          user: { id: "user-123" },
+        },
+      },
+      error: null,
+    });
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=//evil.com",
     );
