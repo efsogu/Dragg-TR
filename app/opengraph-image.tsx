@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,7 +31,7 @@ function Wordmark() {
         lineHeight: 1,
       }}
     >
-      Dragg
+      Dragg-TR
     </span>
   );
 }
@@ -65,7 +65,7 @@ function PillBadge() {
         color: "rgba(255, 255, 255, 0.6)",
       }}
     >
-      dragg-finance.vercel.app
+      dragg-tr.vercel.app
     </div>
   );
 }
