@@ -32,6 +32,18 @@ export default defineConfig({
       testMatch: /(landing|auth)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "firefox-smoke",
+      testMatch: /cross-browser-smoke\.spec\.ts$/,
+      use: { ...devices["Desktop Firefox"], storageState: "e2e/.auth/user.json" },
+      dependencies: ["setup"],
+    },
+    {
+      name: "mobile-chromium-smoke",
+      testMatch: /cross-browser-smoke\.spec\.ts$/,
+      use: { ...devices["Pixel 7"], storageState: "e2e/.auth/user.json" },
+      dependencies: ["setup"],
+    },
   ],
   webServer: {
     command: "pnpm run build && pnpm run start",
@@ -39,6 +51,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
+      E2E_TEST_AUTH: "1",
       PORT: port,
     },
   },

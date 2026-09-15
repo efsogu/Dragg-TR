@@ -1,17 +1,36 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { exchangeCodeForSession, setSession, createClient } = vi.hoisted(() => ({
+const {
+  createClient,
+  exchangeCodeForSession,
+  maybeSingle,
+  setSession,
+} = vi.hoisted(() => ({
+  createClient: vi.fn(),
   exchangeCodeForSession: vi
     .fn()
     .mockResolvedValue({ data: { session: null }, error: null }),
+  maybeSingle: vi
+    .fn()
+    .mockResolvedValue({ data: { terms_accepted: true }, error: null }),
   setSession: vi.fn(),
-  createClient: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 
 import { GET } from "@/app/auth/callback/route";
+
+function createSupabaseMock() {
+  return {
+    auth: { exchangeCodeForSession, setSession },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({ maybeSingle })),
+      })),
+    })),
+  };
+}
 
 describe("GET /auth/callback", () => {
   beforeEach(() => {
@@ -20,12 +39,14 @@ describe("GET /auth/callback", () => {
       data: { session: null },
       error: null,
     });
-    createClient.mockResolvedValue({
-      auth: { exchangeCodeForSession, setSession },
+    maybeSingle.mockResolvedValue({
+      data: { terms_accepted: true },
+      error: null,
     });
+    createClient.mockResolvedValue(createSupabaseMock());
   });
 
-  it("exchanges the code for a session and redirects to the safe 'next' path", async () => {
+  it("fails closed to the landing page when code exchange returns no session", async () => {
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=/transactions",
     );
@@ -35,9 +56,22 @@ describe("GET /auth/callback", () => {
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123", undefined);
     expect(setSession).not.toHaveBeenCalled();
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost/transactions",
+    expect(response.headers.get("location")).toBe("http://localhost/");
+  });
+
+  it("fails closed to the landing page when code exchange errors", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: null },
+      error: new Error("oauth"),
+    });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=bad-code&next=/transactions",
     );
+
+    const response = await GET(request);
+
+    expect(response.headers.get("location")).toBe("http://localhost/");
+    expect(setSession).not.toHaveBeenCalled();
   });
 
   it("passes sb_flow_id through so the matching PKCE verifier cookie is cleaned up", async () => {
@@ -52,40 +86,104 @@ describe("GET /auth/callback", () => {
     });
   });
 
-  it("re-saves the session via setSession to drop the provider token bloat", async () => {
+  it("re-saves the session without provider tokens and preserves the requested path after accepted terms", async () => {
     exchangeCodeForSession.mockResolvedValue({
       data: {
         session: {
           access_token: "at-123",
           refresh_token: "rt-456",
           provider_token: "google-at",
+          user: { id: "user-123" },
         },
       },
       error: null,
     });
     const request = new NextRequest(
-      "http://localhost/auth/callback?code=abc123",
+      "http://localhost/auth/callback?code=abc123&next=/transactions",
     );
 
-    await GET(request);
+    const response = await GET(request);
 
     expect(setSession).toHaveBeenCalledWith({
       access_token: "at-123",
       refresh_token: "rt-456",
     });
+    expect(maybeSingle).toHaveBeenCalledOnce();
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/transactions",
+    );
   });
 
-  it("skips the exchange and redirects to /dashboard when there is no code or 'next' param", async () => {
+  it("redirects a new Google user to terms acceptance before dashboard access", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "at-123",
+          refresh_token: "rt-456",
+          user: { id: "user-123" },
+        },
+      },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({
+      data: { terms_accepted: false },
+      error: null,
+    });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=abc123&next=/dashboard",
+    );
+
+    const response = await GET(request);
+
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/auth/accept-terms",
+    );
+  });
+
+  it("fails closed to terms acceptance when the profile cannot be read", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "at-123",
+          refresh_token: "rt-456",
+          user: { id: "user-123" },
+        },
+      },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({ data: null, error: new Error("db") });
+    const request = new NextRequest(
+      "http://localhost/auth/callback?code=abc123",
+    );
+
+    const response = await GET(request);
+
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/auth/accept-terms",
+    );
+  });
+
+  it("skips the exchange and returns to the landing page when there is no code", async () => {
     const request = new NextRequest("http://localhost/auth/callback");
 
     const response = await GET(request);
 
     expect(exchangeCodeForSession).not.toHaveBeenCalled();
     expect(createClient).not.toHaveBeenCalled();
-    expect(response.headers.get("location")).toBe("http://localhost/dashboard");
+    expect(response.headers.get("location")).toBe("http://localhost/");
   });
 
-  it("falls back to /dashboard when 'next' points off-site", async () => {
+  it("falls back to /dashboard when next points off-site after a valid session", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "at-123",
+          refresh_token: "rt-456",
+          user: { id: "user-123" },
+        },
+      },
+      error: null,
+    });
     const request = new NextRequest(
       "http://localhost/auth/callback?code=abc123&next=//evil.com",
     );

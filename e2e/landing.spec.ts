@@ -1,48 +1,38 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("landing page", () => {
-  test("renders the sign-in card by default", async ({ page }) => {
+  test("renders the Google-only sign-in card", async ({ page }) => {
     await page.goto("/");
 
     await expect(
       page.getByRole("heading", { name: "Sign in" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Continue with Google" }),
+    ).toBeVisible();
+
+    await expect(page.getByLabel("Email", { exact: true })).toHaveCount(0);
+    await expect(page.locator("#auth-password")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Create account" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Forgot password?" }),
+    ).toHaveCount(0);
   });
 
-  test("requires accepting the Terms of Use and Privacy Policy before sign up", async ({
-    page,
-  }) => {
+  test("keeps signup terms out of the pre-auth screen", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Create account" }).click();
 
-    await expect(
-      page.getByRole("link", { name: "Terms of Use" }),
-    ).toHaveAttribute(
-      "href",
-      "https://github.com/fsousac/Dragg/blob/main/docs/terms-of-use.md",
+    await expect(page.getByRole("link", { name: "Terms of Use" })).toHaveCount(
+      0,
     );
     await expect(
       page.getByRole("link", { name: "Privacy Policy" }),
-    ).toHaveAttribute(
-      "href",
-      "https://github.com/fsousac/Dragg/blob/main/docs/privacy-policy.md",
-    );
-
-    await page.getByLabel("First Name").fill("Test");
-    await page.getByLabel("Last Name").fill("User");
-    await page.getByLabel("Email", { exact: true }).fill("no-terms@example.com");
-    await page.locator("#auth-password").fill("Secure1!x");
-    await page.locator("#auth-confirm-password").fill("Secure1!x");
-
-    await page.getByRole("button", { name: "Sign up with email" }).click();
-
+    ).toHaveCount(0);
     await expect(
-      page.getByText(
-        "You must accept the Terms of Use and Privacy Policy to create an account.",
-      ),
+      page.getByRole("button", { name: "Continue with Google" }),
     ).toBeVisible();
-    await expect(page).not.toHaveURL(/\/dashboard/);
   });
 });
 

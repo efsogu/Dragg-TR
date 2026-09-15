@@ -63,7 +63,7 @@ function LandingFooter({ t }: { t: Translate }) {
   return (
     <footer className="text-center py-8 px-4 text-foreground/40 text-xs">
       <a
-        href="https://github.com/fsousac/Dragg"
+        href="https://github.com/efsogu/Dragg-TR"
         target="_blank"
         rel="noopener noreferrer"
         className="underline hover:text-foreground/70 transition-colors"

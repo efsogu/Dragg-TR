@@ -6,6 +6,7 @@ import {
   getTransactionFormOptions,
   listTransactions,
 } from "@/lib/finance/transactions";
+import { getTurkeyMonthValue } from "@/lib/time/turkey-calendar";
 import {
   createCategoryAction,
   advanceInstallmentsAction,
@@ -34,9 +35,7 @@ function getNextMonthValue(month: string) {
 }
 
 function resolveMonthParam(value: string | string[] | undefined): string {
-  return Array.isArray(value)
-    ? value[0]
-    : (value ?? new Date().toISOString().slice(0, 7));
+  return Array.isArray(value) ? value[0] : (value ?? getTurkeyMonthValue());
 }
 
 function resolveFlagParam(value: string | string[] | undefined): boolean {

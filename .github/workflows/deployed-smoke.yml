@@ -1,0 +1,75 @@
+name: Deployed Smoke
+
+on:
+  workflow_run:
+    workflows:
+      - Vercel Production Deploy
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public deployment URL to smoke
+        required: true
+        default: https://dragg-tr.vercel.app
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployed-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deployed-smoke:
+    name: Deployed auth/browser smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Read deployed smoke mode
+        shell: bash
+        run: |
+          MODE=$(tr -d '\r\n ' < .github/deployed-smoke/mode.txt)
+          echo "DEPLOYED_SMOKE_MODE=$MODE" >> "$GITHUB_ENV"
+          echo "Deployed smoke mode: $MODE"
+
+      - name: Run deployed Playwright smoke
+        run: pnpm exec playwright test --config=playwright.deployed.config.ts
+        env:
+          CI: true
+          E2E_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'https://dragg-tr.vercel.app' }}
+
+      - name: Upload deployed smoke report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deployed-smoke-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 7

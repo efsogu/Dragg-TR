@@ -685,10 +685,18 @@ describe("updatePaymentMethod", () => {
   });
 
   it("throws for a protected payment method", async () => {
-    setup([qb({ data: paymentMethodRow({ type: "pix" }), error: null })]);
+    setup([qb({ data: paymentMethodRow({ type: "cash" }), error: null })]);
     await expect(updatePaymentMethod(validInput)).rejects.toThrow(
       "This payment method cannot be edited.",
     );
+  });
+
+  it("allows a legacy pix payment method to be converted", async () => {
+    setup([
+      qb({ data: paymentMethodRow({ type: "pix" }), error: null }),
+      qb({ error: null }),
+    ]);
+    await expect(updatePaymentMethod(validInput)).resolves.toBeUndefined();
   });
 
   it("defaults credit limit/due day/closing day when omitted from a credit update", async () => {
@@ -760,6 +768,14 @@ describe("deletePaymentMethod", () => {
       deletePaymentMethod(PAYMENT_METHOD_ID),
     ).resolves.toBeUndefined();
     expect(supabase.from).toHaveBeenCalledWith("payment_methods");
+  });
+
+  it("deletes a legacy pix payment method", async () => {
+    setup([
+      qb({ data: paymentMethodRow({ type: "pix" }), error: null }),
+      qb({ error: null }),
+    ]);
+    await expect(deletePaymentMethod(PAYMENT_METHOD_ID)).resolves.toBeUndefined();
   });
 
   it("throws when the delete fails", async () => {

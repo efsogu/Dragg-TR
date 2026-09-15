@@ -37,7 +37,7 @@ type NewPaymentMethodDialogProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-const paymentTypes = ["debit", "credit", "bank", "boleto", "other"] as const;
+const paymentTypes = ["debit", "credit", "bank", "other"] as const;
 
 function useControlledOpen(
   controlledOpen: boolean | undefined,

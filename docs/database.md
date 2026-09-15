@@ -1,10 +1,8 @@
 # Database Notes
 
-Database changes live in `supabase/migrations`.
+Database changes live in `supabase/migrations` and must be applied in filename order.
 
-## Current tables
-
-The current committed schema defines these Supabase tables:
+## User-owned tables
 
 - `profiles`
 - `categories`
@@ -14,152 +12,62 @@ The current committed schema defines these Supabase tables:
 - `goals`
 - `privacy_requests`
 
-## Current migrations
+All exposed user-owned tables use Row Level Security (RLS). `anon` table privileges are revoked; authenticated grants are limited to operations used by the application.
 
-- `001_init.sql`: creates the finance schema, indexes, initial RLS policies, profile/category/payment-method defaults, and the initial auth user seed trigger.
-- `002_security_lgpd_hardening.sql`: adds `updated_at` and `deleted_at` columns, moves helper functions into the private schema, adds privacy requests, hardens grants and RLS policies, validates transaction ownership references, and adds LGPD-oriented comments.
-- `005_add_installment_group_metadata.sql`: adds stable installment grouping metadata and an authenticated-user scoped installment group index.
-- `006_add_installment_prepayment_metadata.sql`: adds installment prepayment metadata and an authenticated-user scoped prepayment month index.
-- `010_stop_writing_plaintext_profile_pii.sql`: stops the signup trigger from writing plaintext `profiles.name`/`email` (application-layer encryption now owns these fields, see `lib/crypto/field-encryption.ts`), and drops the now-unused `transactions_user_id_notes_idx` partial index.
+## Dragg-TR migration chain
 
-## What belongs in the repository
+Important Turkey/security migrations in the current chain:
 
-The repository should include:
+- `009_require_terms_acceptance.sql` adds `profiles.terms_accepted` and the initial acceptance gate.
+- `010_stop_writing_plaintext_profile_pii.sql` stops the auth trigger from writing plaintext profile name/email.
+- `011_turkey_defaults.sql` replaces new-user defaults with 14 Turkish categories and 4 Turkish payment methods.
+- `012_least_privilege_table_grants.sql` removes broad table privileges and restores the CRUD surface required by the app.
+- `013_revoke_anon_rpc_execute.sql` removes anonymous access to finance RPCs and grants authenticated execution only.
+- `014_terms_acceptance_hardening.sql` removes direct authenticated UPDATE access to `profiles.terms_accepted`, leaves column-level UPDATE on encrypted `email`/`name`, and exposes the one-way authenticated `accept_terms()` RPC.
 
-- schema migrations
-- table constraints
-- indexes
-- RLS policies
-- trigger/function definitions required to run the app
-- seed/default data that does not contain private user information
-
-The repository must not include:
-
-- Supabase service-role keys
-- OAuth client secrets
-- `.env.local`
-- production database URLs
-- dumps with real user data
-- access tokens or refresh tokens
-
-## Profile fields used by the app
+## Profile fields
 
 - `id`
-- `email` — application-layer encrypted (`lib/crypto/field-encryption.ts`), never plaintext at rest. Distinct from `auth.users.email`, which Supabase Auth manages and is unaffected.
-- `name` — application-layer encrypted (`lib/crypto/field-encryption.ts`), never plaintext at rest.
+- `email` — application-layer encrypted
+- `name` — application-layer encrypted
+- `terms_accepted` — server-controlled acceptance flag
 - `created_at`
 - `updated_at`
 - `deleted_at`
 
-`private.handle_new_user()` no longer writes plaintext `name`/`email` into `profiles` (see migration `010`). `lib/auth/encrypted-profile.ts` fills them in, encrypted, on the user's next authenticated request.
+`private.handle_new_user()` does not write plaintext profile name/email. `lib/auth/encrypted-profile.ts` fills encrypted values during authenticated use.
 
-## Category fields used by the app
+Authenticated browser code may update profile `email` and `name` columns as required by the encryption flow, but may not directly update `terms_accepted`. Terms acceptance must use `public.accept_terms()`.
 
-- `id`
-- `user_id`
-- `name`
-- `icon`
-- `group_type`
-- `is_default`
-- `monthly_limit`
-- `created_at`
-- `updated_at`
-- `deleted_at`
+## Turkey onboarding defaults
 
-## Payment method fields used by the app
+`private.handle_new_user()` creates, for every new Auth user:
 
-- `id`
-- `user_id`
-- `name`
-- `type`
-- `credit_limit`
-- `due_day`
-- `closing_day`
-- `created_at`
-- `updated_at`
-- `deleted_at`
+### Categories
 
-The application has backward-compatible fallbacks for older environments that do not have all optional payment-method fields. The current committed schema includes credit-card limit and due/closing day support, but does not define an `is_default` column for payment methods.
+Konut, Market & Gıda, Ulaşım, Sağlık, Eğitim, Faturalar, Borçlar, Eğlence, Abonelikler, Alışveriş, Diğer, Yatırım, Rezerv, Gelir.
 
-## Transaction fields used by the app
+### Payment methods
 
-- `id`
-- `user_id`
-- `amount`
-- `category_id`
-- `date`
-- `description` — application-layer encrypted with a deterministic IV (`lib/crypto/field-encryption.ts`) so equality lookups (subscription grouping) still work; never plaintext at rest.
-- `kind`
-- `installment_group_id`
-- `installment_number`
-- `installment_total`
-- `advanced_to_month`
-- `advanced_at`
-- `notes` — application-layer encrypted (`lib/crypto/field-encryption.ts`), random IV; never plaintext at rest.
-- `payment_method_id`
-- `created_at`
-- `updated_at`
-- `deleted_at`
+Nakit, Kredi Kartı, Banka Kartı, Banka Transferi.
 
-Installments and subscriptions are modeled as multiple transaction rows. Installment rows from the same original purchase share `installment_group_id`, use 1-based `installment_number`, and store the original purchase count in `installment_total`. Installment groups are still user-owned transaction rows and must always be queried with the authenticated user's scope.
+Legacy `pix` and `boleto` enum/check values remain accepted for compatibility with old/imported data, but are not created for new Turkey users.
 
-Installment prepayment uses `advanced_to_month` and `advanced_at`. The original transaction `date`, category, payment method, and installment metadata are preserved for auditability. Payment and invoice views use `advanced_to_month` as the payment context so advanced installments appear in the target month and no longer appear as future obligations.
+## Transaction model
 
-Subscription rows use `notes` values beginning with `subscription`; paused subscriptions use `subscription paused`. Since `notes` is stored encrypted, this prefix check happens in application code against the decrypted value (`lib/finance/transactions.ts`), not as a SQL `LIKE` predicate.
+Transactions are user-owned rows. Installment rows share `installment_group_id`; prepayment uses `advanced_to_month`/`advanced_at`. Subscriptions are represented by recurring transaction rows. Category/payment-method ownership is validated before a transaction can reference those records.
 
-## Monthly budget fields in the schema
+Selected free-text transaction/profile fields are encrypted by application code. Do not put secrets, credentials, card numbers or identity-document values into notes/descriptions.
 
-- `id`
-- `user_id`
-- `month`
-- `income`
-- `needs_limit`
-- `wants_limit`
-- `savings_limit`
-- `created_at`
-- `updated_at`
-- `deleted_at`
+## RPC security
 
-The current UI calculates 50/30/20 budget data from transactions and category limits. The `monthly_budgets` table is available in the schema for persisted monthly budget plans.
+RPCs exposed through the public schema must follow least privilege:
 
-## Goal fields used by the app
+- `calculate_total_saved(date)` → authenticated only
+- `add_goal_funds(uuid, uuid, numeric)` → authenticated only
+- `accept_terms()` → authenticated only, updates only `auth.uid()`'s profile
 
-- `id`
-- `user_id`
-- `name`
-- `icon`
-- `target_amount`
-- `current_amount`
-- `deadline`
-- `color`
-- `created_at`
-- `updated_at`
-- `deleted_at`
-
-`lib/finance/transactions.ts` calls the `add_goal_funds` RPC when adding funds to an existing goal. If an environment does not already provide this RPC, add a migration before using the goal funding flow.
-
-## Privacy request fields in the schema
-
-- `id`
-- `user_id`
-- `request_type`
-- `status`
-- `details`
-- `response`
-- `requested_at`
-- `resolved_at`
-- `updated_at`
-
-The table supports LGPD workflows for access, export, correction, deletion, consent, and support requests.
-
-## Database functions and triggers
-
-- `private.handle_new_user()` creates a profile, default categories, and default payment methods after Supabase Auth user creation.
-- `private.touch_updated_at()` keeps `updated_at` current on updates.
-- `private.validate_transaction_owner_refs()` prevents transactions from referencing categories or payment methods owned by another user.
-- `on_auth_user_created` runs after inserts on `auth.users`.
-
-Email/password signups and Google OAuth signups both insert users into `auth.users`, so both flows use the same `on_auth_user_created` onboarding trigger. Do not duplicate default profile, category, or payment-method setup in frontend code.
+`PUBLIC`/`anon` execute privileges must be revoked when a function is not intended for unauthenticated use.
 
 ## Applying migrations
 
@@ -169,16 +77,13 @@ Preferred:
 supabase db push
 ```
 
-Fallback:
-
-Apply the SQL files in `supabase/migrations` through the Supabase SQL editor.
+CI starts a clean local Supabase stack and therefore verifies that the full migration chain is reproducible from zero.
 
 ## Security requirements
 
 - Keep RLS enabled on exposed user-owned tables.
-- Force RLS where the current migrations force it.
-- Policies should restrict rows by the authenticated user's ID and should be operation-specific when possible.
-- Do not grant broad public write access.
-- Keep unauthenticated `anon` access revoked for user-owned finance data.
-- Do not expose service-role credentials to the application frontend.
-- Keep privileged helper functions out of exposed schemas.
+- Keep authenticated row policies scoped to `auth.uid()`.
+- Keep `anon` access revoked for private finance data.
+- Prefer column-level grants when a table contains server-controlled fields.
+- Do not expose service-role/secret credentials in browser code.
+- Do not place production data dumps or secrets in migrations.

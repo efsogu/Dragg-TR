@@ -15,6 +15,7 @@ import {
   createTransactionAction,
 } from "@/app/transactions/actions";
 import { getDashboardData, getUserContext } from "@/lib/finance/transactions";
+import { getTurkeyMonthValue } from "@/lib/time/turkey-calendar";
 import { AnimatedCard } from "@/components/ui/animated-card";
 
 type DashboardPageProps = {
@@ -126,9 +127,10 @@ export default async function DashboardPage({
   searchParams,
 }: DashboardPageProps) {
   const resolvedSearchParams = await searchParams;
-  const selectedMonth = Array.isArray(resolvedSearchParams?.month)
+  const selectedMonthParam = Array.isArray(resolvedSearchParams?.month)
     ? resolvedSearchParams.month[0]
     : resolvedSearchParams?.month;
+  const selectedMonth = selectedMonthParam ?? getTurkeyMonthValue();
   const userContext = await getUserContext();
 
   return (

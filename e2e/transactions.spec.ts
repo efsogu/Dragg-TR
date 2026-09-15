@@ -5,14 +5,17 @@ test("creates, edits, and deletes a transaction", async ({ page }) => {
   const updatedDescription = `${description} (updated)`;
 
   await page.goto("/transactions");
+  await page.evaluate(() => window.localStorage.setItem("dragg-currency", "TRY"));
+  await page.reload();
 
-  // Create
+  // Create using the Turkey defaults seeded for fresh users.
   await page.getByRole("button", { name: "Add Transaction" }).click();
   const addDialog = page.getByRole("dialog");
+  await expect(addDialog.getByText("₺", { exact: true })).toBeVisible();
   await addDialog.locator("#amount").pressSequentially("5000");
-  await addDialog.getByRole("button", { name: /Food/ }).click();
+  await addDialog.getByRole("button", { name: /Market & Gıda$/ }).click();
   await addDialog.locator("#description").fill(description);
-  await addDialog.getByRole("button", { name: "Cash", exact: true }).click();
+  await addDialog.getByRole("button", { name: "Nakit", exact: true }).click();
   await addDialog.getByRole("button", { name: "Save transaction" }).click();
 
   await expect(page.getByText("Transaction recorded successfully!")).toBeVisible();

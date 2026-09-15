@@ -17,6 +17,7 @@ import {
   listPaymentMethodOverview,
   listSubscriptionOverview,
 } from "@/lib/finance/transactions";
+import { getTurkeyMonthValue } from "@/lib/time/turkey-calendar";
 
 type PaymentsPageProps = {
   readonly searchParams?: Promise<{
@@ -24,13 +25,8 @@ type PaymentsPageProps = {
   }>;
 };
 
-function getCurrentMonthValue() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function normalizeMonthValue(month?: string) {
-  return month?.match(/^\d{4}-\d{2}$/) ? month : getCurrentMonthValue();
+  return month?.match(/^\d{4}-\d{2}$/) ? month : getTurkeyMonthValue();
 }
 
 export default async function PaymentsPage({

@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <div
       className="fixed inset-0 z-100 grid place-items-center bg-background/45 text-foreground backdrop-blur-[2px]"
-      aria-label="Carregando Dragg"
+      aria-label="Loading Dragg"
       aria-live="polite"
     >
       <div className="relative grid size-24 place-items-center">

@@ -1,73 +1,79 @@
 # Authentication
 
-Dragg uses Supabase Auth for all authentication. Google OAuth remains supported, and email/password authentication is available as an alternative provider.
+Dragg-TR uses Supabase Auth. The **production user-facing authentication flow is Google OAuth only**.
 
-## Supported providers
+## Production provider
 
-- Google OAuth
-- Email and password
+Enable Google in Supabase Dashboard → Authentication → Providers → Google. Create a Google Web OAuth client and register the Supabase Auth callback:
 
-Do not add a custom authentication system or service-role based login flow. Client-rendered code must use the publishable Supabase key only.
-
-## Supabase setup
-
-Enable providers in the Supabase Dashboard:
-
-- Authentication -> Providers -> Google
-- Authentication -> Providers -> Email
-
-Required local redirect URLs:
-
-- `http://localhost:3000/auth/callback`
-- `http://localhost:3000/auth/update-password`
-
-Required production redirect URLs:
-
-- `https://your-domain.com/auth/callback`
-- `https://your-domain.com/auth/update-password`
-
-The password reset request redirects through `/auth/callback?next=/auth/update-password` so the existing SSR callback can exchange the recovery code and establish the session before the password update form renders.
-
-If sign-up returns HTTP 422, check Supabase Dashboard settings:
-
-- Authentication -> Providers -> Email is enabled
-- Authentication -> URL Configuration includes `http://localhost:3000/auth/callback` (and production equivalents)
-- Sign-up passwords meet project rules (the app enforces at least 8 characters with lowercase, uppercase, a number, and a symbol, matching Supabase Email provider settings)
-- The email is not already registered
-
-## Environment variables
-
-Set these values in `.env.local` for local development and in the deployment environment for production:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```text
+https://<project-ref>.supabase.co/auth/v1/callback
 ```
 
-Do not commit Supabase service-role keys, OAuth client secrets, refresh tokens, or access tokens.
+For the current hosted Dragg-TR staging project this callback is:
+
+```text
+https://pgmfanwotjgwqnjspapt.supabase.co/auth/v1/callback
+```
+
+The application's OAuth request sets `redirectTo` to the active origin plus `/auth/callback`. Every hosted callback URL used by the app must be present in Supabase Authentication → URL Configuration.
+
+Do not expose the Google Client Secret, Supabase secret/service-role keys, provider access tokens, or refresh tokens in client code or repository files.
+
+## Callback behavior
+
+`/auth/callback` implements the PKCE code exchange. It fails closed:
+
+- missing authorization code → `/`
+- failed code exchange → `/`
+- successful session + unaccepted Terms → `/auth/accept-terms`
+- successful session + accepted Terms → safe requested path, defaulting to `/dashboard`
+
+External, protocol-relative, backslash, CR, and LF redirect targets are rejected by `lib/auth/redirect.ts`.
 
 ## Onboarding defaults
 
-New users created by Google OAuth and email/password both create rows in `auth.users`. The database trigger `on_auth_user_created` runs for both providers and creates:
+Every new Supabase Auth user runs the database trigger `on_auth_user_created`. `private.handle_new_user()` creates:
 
-- profile
-- default categories
-- default payment methods
+- one profile row
+- 14 Turkish default categories
+- 4 Turkish default payment methods
 
-Do not duplicate this default data creation in frontend code.
+Frontend code must not duplicate this seed logic.
 
-Email/password sign-up collects first and last name on the registration form. The app sends `full_name`, `first_name`, and `last_name` in Supabase `signUp` user metadata so `private.handle_new_user()` can populate `public.profiles.name` and settings can display the same fields as Google OAuth users.
+`profiles.email` and `profiles.name` are not written in plaintext by the auth trigger. Application-layer encryption owns those profile fields. `auth.users.email` remains managed by Supabase Auth.
 
 ## Terms of Use acceptance
 
-`public.profiles.terms_accepted` tracks whether a user has accepted the Terms of Use and Privacy Policy. Email/password sign-up requires checking the acceptance box, which sends `terms_accepted: true` in `signUp` metadata so `private.handle_new_user()` sets the column on creation. Google OAuth sends no such metadata, so new Google sign-ups land with `terms_accepted = false`.
+Google OAuth does not pre-accept the application's Terms. New Google users therefore start with `profiles.terms_accepted = false` and are routed to `/auth/accept-terms` before dashboard access.
 
-`AppShell` (rendered by every authenticated page) calls `requireAcceptedTerms()`, which redirects to `/auth/accept-terms` whenever the column is `false`. That page persists acceptance via a server action and redirects to `/dashboard`. Users that existed before this column was added were grandfathered in as already accepted by the migration backfill.
+Acceptance is intentionally a one-way server-controlled transition:
 
-## Local flow
+1. the form must submit `acceptTerms=true`;
+2. the server action verifies the authenticated user;
+3. it calls the authenticated `public.accept_terms()` RPC;
+4. the RPC updates only the current user's acceptance flag;
+5. the `authenticated` browser role has no direct `UPDATE` privilege on `profiles.terms_accepted`.
 
-1. Enable Google and Email providers in Supabase.
-2. Add the local redirect URLs above.
-3. Run migrations.
-4. Start the app with `pnpm run dev`.
-5. Use Google sign-in, email/password sign-in, email/password sign-up, or password reset from `/`.
+The browser role retains column-level update access to encrypted profile `email` and `name` fields only.
+
+## Local E2E authentication
+
+The full finance Playwright suite must be deterministic and must not require an external Google account. `app/api/e2e-auth/route.ts` provides a test-only local session bootstrap that is available only when both conditions are true:
+
+- `E2E_TEST_AUTH=1`
+- request hostname is `localhost` or `127.0.0.1`
+
+Outside those conditions the endpoint returns 404. This route exists only to exercise the authenticated finance UI against a disposable local Supabase stack; it is not a production authentication method.
+
+## Production checklist
+
+Before a release is considered production-ready:
+
+- Google provider is enabled in Supabase with the correct Client ID/Secret.
+- Google Web OAuth origin matches the public app domain.
+- Google redirect URI is the Supabase Auth callback.
+- Supabase Site URL is the public app domain.
+- `/auth/callback` URLs for production and intended previews are allow-listed.
+- Real hosted Google login → callback → Terms acceptance → dashboard is tested.
+- Logout/login persistence, mobile/Firefox behavior, finance CRUD and second-user RLS isolation are tested.

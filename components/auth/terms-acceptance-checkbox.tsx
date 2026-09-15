@@ -4,9 +4,9 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
 
 const termsOfUseUrl =
-  "https://github.com/fsousac/Dragg/blob/main/docs/terms-of-use.md";
+  "https://github.com/efsogu/Dragg-TR/blob/main/docs/terms-of-use.md";
 const privacyPolicyUrl =
-  "https://github.com/fsousac/Dragg/blob/main/docs/privacy-policy.md";
+  "https://github.com/efsogu/Dragg-TR/blob/main/docs/privacy-policy.md";
 
 function TermsAcceptanceLabel() {
   const { t } = useI18n();

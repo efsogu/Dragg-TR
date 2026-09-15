@@ -21,6 +21,7 @@ import {
 } from "@/lib/finance/transactions";
 import { NewPaymentMethodDialog } from "@/components/dashboard/new-payment-method-dialog";
 import { useI18n } from "@/lib/i18n";
+import { getCurrencySymbol } from "@/lib/i18n/currency";
 
 export interface TransactionFormData {
   type: "income" | "expense" | "saving";
@@ -448,11 +449,13 @@ type TransactionAmountSectionProps = TransactionFormFieldProps & {
 };
 
 function TransactionAmountSection({ formData, setFormData, error, t }: TransactionAmountSectionProps) {
+  const { currency } = useI18n();
+
   return (
     <div className="rounded-xl border border-border/40 bg-card px-4 py-5">
       <p className="mb-3 text-center text-sm text-muted-foreground">{t("transaction.amount")}</p>
       <div className="flex items-center justify-center align-middle gap-1.5 mx-2">
-        <span className={`text-md font-semibold pt-1.5 ${getAmountColorClass(formData.type)}`}>R$</span>
+        <span className={`text-md font-semibold pt-1.5 ${getAmountColorClass(formData.type)}`}>{getCurrencySymbol(currency)}</span>
         <CurrencyInput
           id="amount"
           label={t("transaction.amount")}

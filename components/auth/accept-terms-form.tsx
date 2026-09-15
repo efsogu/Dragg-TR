@@ -23,7 +23,7 @@ function AcceptTermsHeader() {
 
 export function AcceptTermsForm({
   acceptTermsAction,
-}: Readonly<{ acceptTermsAction: () => Promise<void> }>) {
+}: Readonly<{ acceptTermsAction: (formData: FormData) => Promise<void> }>) {
   const { t } = useI18n();
   const [checked, setChecked] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -47,6 +47,11 @@ export function AcceptTermsForm({
         className="mt-6 space-y-4"
         onSubmit={handleSubmit}
       >
+        <input
+          name="acceptTerms"
+          type="hidden"
+          value={checked ? "true" : "false"}
+        />
         <TermsAcceptanceCheckbox
           checked={checked}
           disabled={isSubmitting}
